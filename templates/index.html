@@ -2,37 +2,13 @@
 <html>
 <head>
     <title>AI Email Dashboard</title>
-    <style>
-        body {
-            font-family: Arial;
-            background: #0f172a;
-            color: white;
-            text-align: center;
-        }
-
-        input, select {
-            padding: 10px;
-            margin: 10px;
-            border-radius: 6px;
-        }
-
-        .card {
-            background: #1e293b;
-            margin: 20px auto;
-            padding: 20px;
-            border-radius: 10px;
-            width: 70%;
-            text-align: left;
-        }
-    </style>
 </head>
 
-<body>
+<body style="font-family: Arial; background:#0f172a; color:white; text-align:center;">
 
 <h1>📩 AI Email Dashboard</h1>
 
 <input type="text" id="search" placeholder="Search..." oninput="loadEmails()">
-
 <select id="filter" onchange="loadEmails()">
     <option value="all">All</option>
     <option value="complaint">Complaint</option>
@@ -60,7 +36,7 @@ async function loadEmails() {
         if (!item.email.toLowerCase().includes(search)) return;
 
         html += `
-        <div class="card">
+        <div style="background:#1e293b; margin:20px auto; padding:20px; width:70%; border-radius:10px;">
             <b>Email:</b><br>${item.email}<br><br>
             <b>Intent:</b> ${item.result.intent}<br>
             <b>Urgency:</b> ${item.result.urgency}<br>
