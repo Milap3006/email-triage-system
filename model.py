@@ -4,7 +4,7 @@ def triage_email(email):
     keywords = []
 
     # =====================
-    # SPAM
+    # 🚫 SPAM
     # =====================
     spam_words = ["buy now", "free", "offer", "win", "earn"]
 
@@ -21,7 +21,7 @@ def triage_email(email):
         }
 
     # =====================
-    # INTENT
+    # 🧠 INTENT
     # =====================
     intent = "query"
 
@@ -42,7 +42,7 @@ def triage_email(email):
         keywords.append("question")
 
     # =====================
-    # URGENCY
+    # ⚡ URGENCY
     # =====================
     urgency = "medium"
 
@@ -53,7 +53,7 @@ def triage_email(email):
         urgency = "low"
 
     # =====================
-    # ROUTING
+    # 🔁 ROUTING
     # =====================
     routing_map = {
         "complaint": "support",
@@ -65,7 +65,7 @@ def triage_email(email):
     routing = routing_map[intent]
 
     # =====================
-    # CONFIDENCE
+    # 📊 CONFIDENCE
     # =====================
     confidence = 60 + len(keywords) * 10
 
@@ -75,7 +75,7 @@ def triage_email(email):
     confidence = min(confidence, 95)
 
     # =====================
-    # PRIORITY
+    # 🔥 PRIORITY
     # =====================
     priority = 50
 
