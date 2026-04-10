@@ -3,9 +3,7 @@ def triage_email(email):
     email_lower = email.lower()
     keywords = []
 
-    # =====================
-    # 🚫 SPAM
-    # =====================
+    # SPAM
     spam_words = ["buy now", "free", "offer", "win", "earn"]
 
     if any(word in email_lower for word in spam_words):
@@ -20,9 +18,7 @@ def triage_email(email):
             "reason": "Spam keywords detected"
         }
 
-    # =====================
-    # 🧠 INTENT
-    # =====================
+    # INTENT
     intent = "query"
 
     if any(word in email_lower for word in ["refund", "issue", "problem", "defective", "not working", "not delivered"]):
@@ -41,9 +37,7 @@ def triage_email(email):
         intent = "query"
         keywords.append("question")
 
-    # =====================
-    # ⚡ URGENCY
-    # =====================
+    # URGENCY
     urgency = "medium"
 
     if any(word in email_lower for word in ["urgent", "asap", "immediately"]):
@@ -52,9 +46,7 @@ def triage_email(email):
     elif intent == "feedback":
         urgency = "low"
 
-    # =====================
-    # 🔁 ROUTING
-    # =====================
+    # ROUTING
     routing_map = {
         "complaint": "support",
         "query": "support",
@@ -64,9 +56,7 @@ def triage_email(email):
 
     routing = routing_map[intent]
 
-    # =====================
-    # 📊 CONFIDENCE
-    # =====================
+    # CONFIDENCE
     confidence = 60 + len(keywords) * 10
 
     if urgency == "high":
@@ -74,9 +64,7 @@ def triage_email(email):
 
     confidence = min(confidence, 95)
 
-    # =====================
-    # 🔥 PRIORITY
-    # =====================
+    # PRIORITY
     priority = 50
 
     if intent == "complaint":
@@ -95,4 +83,4 @@ def triage_email(email):
         "priority_score": priority,
         "keywords": keywords,
         "reason": f"Detected keywords: {', '.join(keywords)}"
-    }
+    }s
