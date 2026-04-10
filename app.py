@@ -1,24 +1,22 @@
-from flask import Flask, request, jsonify, render_template
+from flask import Flask, jsonify, render_template
 from model import triage_email
 import threading
 import time
-
-# 👇 import your gmail function
 import imaplib
 import email
+import os
 
 app = Flask(__name__)
 
 email_store = []
 
+EMAIL = os.environ.get("EMAIL")
+PASSWORD = os.environ.get("PASSWORD")
+
 # =========================
-# 🔥 AUTO EMAIL FETCH FUNCTION
+# FETCH EMAILS LOOP
 # =========================
 def fetch_emails_loop():
-
-    EMAIL = "yeahfenil@gmail.com"
-    PASSWORD = "rgzn vhoc bppc ojeo"
-
     while True:
         try:
             mail = imaplib.IMAP4_SSL("imap.gmail.com")
@@ -42,18 +40,18 @@ def fetch_emails_loop():
                         if part.get_content_type() == "text/plain":
                             payload = part.get_payload(decode=True)
                             if payload:
-                                body = payload.decode(errors="ignore").replace("\r\n", " ").strip()
+                                body = payload.decode(errors="ignore").strip()
                                 break
                 else:
                     payload = msg.get_payload(decode=True)
                     if payload:
-                        body = payload.decode(errors="ignore").replace("\r\n", " ").strip()
+                        body = payload.decode(errors="ignore").strip()
 
                 if not body:
                     continue
 
-                # Avoid duplicates
-                if any(body == item["email"] for item in email_store):
+                # avoid duplicates
+                if any(body == e["email"] for e in email_store):
                     continue
 
                 result = triage_email(body)
@@ -66,12 +64,11 @@ def fetch_emails_loop():
             mail.logout()
 
         except Exception as e:
-            print("Fetch error:", e)
+            print("Error:", e)
 
-        time.sleep(10)  # 🔥 fetch every 10 sec
+        time.sleep(10)
 
 
-# Start background thread
 threading.Thread(target=fetch_emails_loop, daemon=True).start()
 
 
@@ -85,7 +82,12 @@ def home():
 
 @app.route("/emails")
 def get_emails():
-    return jsonify(email_store)
+    sorted_emails = sorted(
+        email_store,
+        key=lambda x: x["result"]["priority_score"],
+        reverse=True
+    )
+    return jsonify(sorted_emails)
 
 
 if __name__ == "__main__":
