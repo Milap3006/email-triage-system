@@ -14,7 +14,7 @@ EMAIL = os.environ.get("EMAIL")
 PASSWORD = os.environ.get("PASSWORD")
 
 # =========================
-# FETCH EMAILS LOOP
+# 📩 FETCH EMAILS LOOP
 # =========================
 def fetch_emails_loop():
     while True:
@@ -68,17 +68,15 @@ def fetch_emails_loop():
 
         time.sleep(10)
 
-
+# start background thread
 threading.Thread(target=fetch_emails_loop, daemon=True).start()
 
-
 # =========================
-# ROUTES
+# 🌐 ROUTES
 # =========================
 @app.route("/")
 def home():
     return render_template("index.html")
-
 
 @app.route("/emails")
 def get_emails():
@@ -89,6 +87,9 @@ def get_emails():
     )
     return jsonify(sorted_emails)
 
-
+# =========================
+# 🚀 RUN (RENDER FIX)
+# =========================
 if __name__ == "__main__":
-    app.run(debug=True)
+    port = int(os.environ.get("PORT", 10000))
+    app.run(host="0.0.0.0", port=port)
