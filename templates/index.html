@@ -2,90 +2,27 @@
 <html>
 <head>
     <title>AI Email Dashboard</title>
-
     <style>
         body {
-            font-family: 'Segoe UI', sans-serif;
-            background: linear-gradient(135deg, #0f172a, #1e293b);
+            font-family: Arial;
+            background: #0f172a;
             color: white;
-            margin: 0;
-            padding: 0;
             text-align: center;
-        }
-
-        h1 {
-            margin-top: 20px;
-            font-size: 28px;
-        }
-
-        .controls {
-            margin: 20px;
         }
 
         input, select {
             padding: 10px;
-            border-radius: 8px;
-            border: none;
-            margin: 5px;
-            width: 220px;
+            margin: 10px;
+            border-radius: 6px;
         }
 
         .card {
-            background: rgba(30, 41, 59, 0.7);
-            backdrop-filter: blur(10px);
+            background: #1e293b;
             margin: 20px auto;
             padding: 20px;
-            border-radius: 15px;
+            border-radius: 10px;
             width: 70%;
             text-align: left;
-            box-shadow: 0 8px 30px rgba(0,0,0,0.5);
-            transition: 0.3s;
-        }
-
-        .card:hover {
-            transform: scale(1.02);
-        }
-
-        .tag {
-            padding: 6px 12px;
-            border-radius: 8px;
-            font-size: 12px;
-            font-weight: bold;
-        }
-
-        .complaint { background: #ef4444; }
-        .query { background: #3b82f6; }
-        .request { background: #f59e0b; }
-        .feedback { background: #10b981; }
-        .spam { background: #6b7280; }
-
-        .high { color: #ef4444; }
-        .medium { color: #f59e0b; }
-        .low { color: #22c55e; }
-
-        .priority {
-            color: #facc15;
-            font-weight: bold;
-        }
-
-        .section {
-            margin-top: 10px;
-        }
-
-        .email-text {
-            color: #cbd5f5;
-            margin-top: 10px;
-        }
-
-        .header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .confidence {
-            font-size: 12px;
-            color: #94a3b8;
         }
     </style>
 </head>
@@ -94,81 +31,44 @@
 
 <h1>📩 AI Email Dashboard</h1>
 
-<div class="controls">
-    🔍 <input type="text" id="search" placeholder="Search emails..." oninput="loadEmails()">
+<input type="text" id="search" placeholder="Search..." oninput="loadEmails()">
 
-    <select id="filter" onchange="loadEmails()">
-        <option value="all">All</option>
-        <option value="complaint">Complaint</option>
-        <option value="query">Query</option>
-        <option value="request">Request</option>
-        <option value="feedback">Feedback</option>
-        <option value="spam">Spam</option>
-    </select>
-</div>
+<select id="filter" onchange="loadEmails()">
+    <option value="all">All</option>
+    <option value="complaint">Complaint</option>
+    <option value="query">Query</option>
+    <option value="request">Request</option>
+    <option value="feedback">Feedback</option>
+    <option value="spam">Spam</option>
+</select>
 
 <div id="emails">Loading...</div>
 
 <script>
-
 async function loadEmails() {
-
     const res = await fetch("/emails");
     const data = await res.json();
 
-    const filter = document.getElementById("filter").value;
     const search = document.getElementById("search").value.toLowerCase();
+    const filter = document.getElementById("filter").value;
 
     let html = "";
 
     data.forEach(item => {
 
-        // 🔥 FILTER
         if (filter !== "all" && item.result.intent !== filter) return;
-
-        // 🔍 SEARCH
         if (!item.email.toLowerCase().includes(search)) return;
 
         html += `
         <div class="card">
-
-            <div class="header">
-                <span class="tag ${item.result.intent}">
-                    ${item.result.intent.toUpperCase()}
-                </span>
-
-                <span class="confidence">
-                    Confidence: ${item.result.confidence}%
-                </span>
-            </div>
-
-            <div class="email-text">
-                ${item.email.substring(0, 200)}...
-            </div>
-
-            <div class="section">
-                <b>Urgency:</b> 
-                <span class="${item.result.urgency}">
-                    ${item.result.urgency}
-                </span>
-            </div>
-
-            <div class="section">
-                <b>Routing:</b> ${item.result.routing}
-            </div>
-
-            <div class="section priority">
-                ⭐ Priority Score: ${item.result.priority_score}
-            </div>
-
-            <div class="section">
-                <b>Keywords:</b> ${item.result.keywords}
-            </div>
-
-            <div class="section">
-                <b>Reason:</b> ${item.result.reason}
-            </div>
-
+            <b>Email:</b><br>${item.email}<br><br>
+            <b>Intent:</b> ${item.result.intent}<br>
+            <b>Urgency:</b> ${item.result.urgency}<br>
+            <b>Routing:</b> ${item.result.routing}<br>
+            <b>Confidence:</b> ${item.result.confidence}%<br>
+            <b>Priority:</b> ${item.result.priority_score}<br>
+            <b>Keywords:</b> ${item.result.keywords}<br>
+            <b>Reason:</b> ${item.result.reason}
         </div>
         `;
     });
@@ -176,10 +76,8 @@ async function loadEmails() {
     document.getElementById("emails").innerHTML = html;
 }
 
-// 🔥 AUTO REFRESH
 setInterval(loadEmails, 5000);
 loadEmails();
-
 </script>
 
 </body>
