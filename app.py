@@ -1,3 +1,21 @@
+from flask import Flask, jsonify, render_template
+from model import triage_email
+import threading
+import time
+import imaplib
+import email
+import os
+
+app = Flask(__name__)
+
+email_store = []
+
+EMAIL = os.environ.get("EMAIL")
+PASSWORD = os.environ.get("PASSWORD")
+
+# =========================
+# 📩 FETCH EMAILS LOOP
+# =========================
 def fetch_emails_loop():
     while True:
         try:
@@ -17,10 +35,10 @@ def fetch_emails_loop():
 
                 body = ""
 
+                # extract email body
                 if msg.is_multipart():
                     for part in msg.walk():
-                        content_type = part.get_content_type()
-                        if content_type == "text/plain":
+                        if part.get_content_type() == "text/plain":
                             payload = part.get_payload(decode=True)
                             if payload:
                                 body = payload.decode(errors="ignore")
@@ -30,10 +48,10 @@ def fetch_emails_loop():
                     if payload:
                         body = payload.decode(errors="ignore")
 
-                # 🔥 CLEAN TEXT
+                # clean text
                 body = body.replace("\r\n", " ").strip()
 
-                # 🔥 VERY IMPORTANT (fallback)
+                # 🔥 fallback (VERY IMPORTANT)
                 if not body or len(body) < 10:
                     body = msg.get("subject", "No content")
 
@@ -48,7 +66,7 @@ def fetch_emails_loop():
                     "result": result
                 })
 
-                print("✅ Added:", body[:50])  # DEBUG
+                print("✅ Added:", body[:60])
 
             mail.logout()
 
@@ -56,3 +74,30 @@ def fetch_emails_loop():
             print("Error:", e)
 
         time.sleep(10)
+
+
+# start background thread
+threading.Thread(target=fetch_emails_loop, daemon=True).start()
+
+# =========================
+# 🌐 ROUTES
+# =========================
+@app.route("/")
+def home():
+    return render_template("index.html")
+
+@app.route("/emails")
+def get_emails():
+    sorted_emails = sorted(
+        email_store,
+        key=lambda x: x["result"]["priority_score"],
+        reverse=True
+    )
+    return jsonify(sorted_emails)
+
+# =========================
+# 🚀 RUN (RENDER FIX)
+# =========================
+if __name__ == "__main__":
+    port = int(os.environ.get("PORT", 10000))
+    app.run(host="0.0.0.0", port=port)
