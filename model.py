@@ -1,157 +1,15 @@
-from transformers import pipeline
-
-# Load model
-classifier = pipeline(
-    "zero-shot-classification",
-    model="valhalla/distilbart-mnli-12-3"
-)
-
-# Labels
-sender_labels = ["customer", "spam", "internal"]
-
-intent_labels = [
-    "customer complaint about product or service",
-    "customer asking question",
-    "customer requesting something",
-    "customer giving feedback"
-]
-
-intent_map = {
-    "customer complaint about product or service": "complaint",
-    "customer asking question": "query",
-    "customer requesting something": "request",
-    "customer giving feedback": "feedback"
-}
-
-routing_map = {
-    "complaint": "support",
-    "query": "support",
-    "request": "sales",
-    "feedback": "admin"
-}
-
-# =========================
-# 🔴 KEYWORDS
-# =========================
-complaint_keywords = [
-    "refund", "issue", "problem", "error", "failed",
-    "not working", "defective", "damaged", "unhappy",
-    "not delivered", "not arrived", "late"
-]
-
-urgent_keywords = ["urgent", "asap", "immediately", "quickly"]
-
-query_keywords = ["what", "how", "when", "where", "why", "?","details","information"]
-
-request_keywords = ["change", "cancel", "upgrade", "send", "schedule", "arrange", "replace"]
-
-feedback_keywords = ["great", "amazing", "happy", "good", "love", "smooth", "helpful"]
-
-# =========================
-# 🚫 SPAM DETECTION
-# =========================
-def detect_spam(email):
-    spam_words = ["buy now", "free", "offer", "win", "earn money"]
-    return any(word in email.lower() for word in spam_words)
-
-
-# =========================
-# 🧠 RULE INTENT + KEYWORDS
-# =========================
-def rule_based_intent(email):
-    email_lower = email.lower()
-    detected = []
-
-    for word in complaint_keywords:
-        if word in email_lower:
-            detected.append(word)
-    if detected:
-        return "complaint", detected
-
-    for word in query_keywords:
-        if word in email_lower:
-            detected.append(word)
-    if detected:
-        return "query", detected
-
-    for word in feedback_keywords:
-        if word in email_lower:
-            detected.append(word)
-    if detected:
-        return "feedback", detected
-
-    for word in request_keywords:
-        if word in email_lower:
-            detected.append(word)
-    if detected:
-        return "request", detected
-
-    return None, detected
-
-
-# =========================
-# ⚡ URGENCY
-# =========================
-def detect_urgency(email):
-    email_lower = email.lower()
-
-    if any(word in email_lower for word in urgent_keywords):
-        return "high"
-
-    if any(word in email_lower for word in feedback_keywords):
-        return "low"
-
-    return "medium"
-
-
-# =========================
-# 🎯 CONFIDENCE (DYNAMIC)
-# =========================
-def calculate_confidence(email, detected_keywords, urgency, ai_score=None):
-
-    score = 50
-
-    # keyword strength
-    score += len(detected_keywords) * 12
-
-    # urgency boost
-    if urgency == "high":
-        score += 10
-    elif urgency == "low":
-        score -= 5
-
-    # email length
-    if len(email) > 100:
-        score += 5
-
-    # AI contribution
-    if ai_score:
-        score += int(ai_score * 100 * 0.2)
-
-    return min(max(score, 30), 100)
-
-
-# =========================
-# 🔥 PRIORITY SCORE
-# =========================
-def calculate_priority(intent, urgency):
-    score = 50
-
-    if intent == "complaint":
-        score += 30
-    if urgency == "high":
-        score += 20
-
-    return min(score, 100)
-
-
-# =========================
-# 🚀 MAIN FUNCTION
-# =========================
 def triage_email(email):
 
-    # 1️⃣ Spam
-    if detect_spam(email):
+    email_lower = email.lower()
+
+    keywords = []
+
+    # =====================
+    # SPAM
+    # =====================
+    spam_words = ["buy now", "free", "offer", "win", "earn"]
+
+    if any(word in email_lower for word in spam_words):
         return {
             "sender_type": "spam",
             "intent": "spam",
@@ -160,41 +18,82 @@ def triage_email(email):
             "confidence": 95,
             "priority_score": 10,
             "keywords": ["spam"],
-            "reason": "Spam detected"
+            "reason": "Spam keywords detected"
         }
 
-    # 2️⃣ Rule-based intent
-    intent_result, detected_keywords = rule_based_intent(email)
+    # =====================
+    # INTENT DETECTION
+    # =====================
+    intent = "query"
 
-    # 3️⃣ Urgency
-    urgency_result = detect_urgency(email)
+    if any(word in email_lower for word in ["refund", "issue", "problem", "not working", "defective"]):
+        intent = "complaint"
+        keywords.append("issue")
 
-    if intent_result:
-        confidence = calculate_confidence(email, detected_keywords, urgency_result)
-        reason = f"Detected keywords: {', '.join(detected_keywords)}"
-    else:
-        intent = classifier(email, intent_labels)
-        intent_result = intent_map[intent["labels"][0]]
-        confidence = calculate_confidence(email, [], urgency_result, intent["scores"][0])
-        reason = "AI classification"
+    elif any(word in email_lower for word in ["change", "cancel", "upgrade", "send", "schedule"]):
+        intent = "request"
+        keywords.append("action")
 
-    # 4️⃣ Sender
-    sender = classifier(email, sender_labels)
-    sender_result = sender["labels"][0]
+    elif any(word in email_lower for word in ["great", "amazing", "happy", "good"]):
+        intent = "feedback"
+        keywords.append("positive")
 
-    # 5️⃣ Routing
-    routing = routing_map[intent_result]
+    elif "?" in email_lower:
+        intent = "query"
+        keywords.append("question")
 
-    # 6️⃣ Priority
-    priority_score = calculate_priority(intent_result, urgency_result)
+    # =====================
+    # URGENCY
+    # =====================
+    urgency = "medium"
+
+    if any(word in email_lower for word in ["urgent", "asap", "immediately"]):
+        urgency = "high"
+
+    elif intent == "feedback":
+        urgency = "low"
+
+    # =====================
+    # ROUTING
+    # =====================
+    routing_map = {
+        "complaint": "support",
+        "query": "support",
+        "request": "sales",
+        "feedback": "admin"
+    }
+
+    routing = routing_map[intent]
+
+    # =====================
+    # CONFIDENCE (DYNAMIC)
+    # =====================
+    confidence = 60 + len(keywords) * 10
+
+    if urgency == "high":
+        confidence += 10
+
+    confidence = min(confidence, 95)
+
+    # =====================
+    # PRIORITY
+    # =====================
+    priority = 50
+
+    if intent == "complaint":
+        priority += 30
+    if urgency == "high":
+        priority += 20
+
+    priority = min(priority, 100)
 
     return {
-        "sender_type": sender_result,
-        "intent": intent_result,
-        "urgency": urgency_result,
+        "sender_type": "customer",
+        "intent": intent,
+        "urgency": urgency,
         "routing": routing,
         "confidence": confidence,
-        "priority_score": priority_score,
-        "keywords": detected_keywords,
-        "reason": reason
+        "priority_score": priority,
+        "keywords": keywords,
+        "reason": f"Detected keywords: {', '.join(keywords)}"
     }
