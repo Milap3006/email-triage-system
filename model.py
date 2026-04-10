@@ -1,7 +1,6 @@
 def triage_email(email):
 
     email_lower = email.lower()
-
     keywords = []
 
     # =====================
@@ -22,19 +21,19 @@ def triage_email(email):
         }
 
     # =====================
-    # INTENT DETECTION
+    # INTENT
     # =====================
     intent = "query"
 
-    if any(word in email_lower for word in ["refund", "issue", "problem", "not working", "defective"]):
+    if any(word in email_lower for word in ["refund", "issue", "problem", "defective", "not working", "not delivered"]):
         intent = "complaint"
         keywords.append("issue")
 
-    elif any(word in email_lower for word in ["change", "cancel", "upgrade", "send", "schedule"]):
+    elif any(word in email_lower for word in ["change", "cancel", "upgrade", "send", "schedule", "arrange"]):
         intent = "request"
         keywords.append("action")
 
-    elif any(word in email_lower for word in ["great", "amazing", "happy", "good"]):
+    elif any(word in email_lower for word in ["great", "amazing", "happy", "good", "love"]):
         intent = "feedback"
         keywords.append("positive")
 
@@ -66,7 +65,7 @@ def triage_email(email):
     routing = routing_map[intent]
 
     # =====================
-    # CONFIDENCE (DYNAMIC)
+    # CONFIDENCE
     # =====================
     confidence = 60 + len(keywords) * 10
 
